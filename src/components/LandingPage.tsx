@@ -85,7 +85,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onlineCount, onStart, 
     </svg>
   </div>
   <span className="font-bold text-xl sm:text-2xl tracking-tight">
-    <span className="text-slate-900 dark:text-white">Strangers</span><span className="text-red-500">In</span><span className="text-slate-900 dark:text-white">Town</span>
+    <span className="text-slate-900 dark:text-white">Strangers</span><span className="text-red-500">town</span>
   </span>
 </div>  
         <div className="flex items-center gap-3 sm:gap-4">

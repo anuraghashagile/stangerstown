@@ -318,7 +318,12 @@ export default function App() {
 
   const isConnected = status === ChatMode.CONNECTED;
   const isSearching = status === ChatMode.SEARCHING || status === ChatMode.WAITING;
-  const isCurrentPartnerFriend = partnerPeerId ? friends.some(f => f.id === partnerPeerId) : false;
+  
+  // Robust check for friendship status
+  const isCurrentPartnerFriend = partnerPeerId ? friends.some(f => 
+    f.id === partnerPeerId || 
+    (f.profile.uid && partnerProfile?.uid && f.profile.uid === partnerProfile.uid)
+  ) : false;
 
   const getDisconnectMessage = () => {
     if (disconnectReason === 'local_network') return "You disconnected due to an internet issue.";
@@ -504,7 +509,14 @@ export default function App() {
           partnerProfile={sessionType === 'random' ? partnerProfile : null} 
           onOpenSettings={() => setShowSettingsModal(true)}
           onEditProfile={() => setShowEditProfileModal(true)}
-          onAddFriend={sendFriendRequest}
+          onAddFriend={() => {
+             if (isCurrentPartnerFriend) {
+                setFriendNotification("You are already friends!");
+                setTimeout(() => setFriendNotification(null), 3000);
+             } else {
+                sendFriendRequest();
+             }
+          }}
           isFriend={isCurrentPartnerFriend}
         />
       )}

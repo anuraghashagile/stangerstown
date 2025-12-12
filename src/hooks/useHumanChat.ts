@@ -424,7 +424,7 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
     setPartnerProfile(null);
     setPartnerPeerId(null);
     setRemoteVanishMode(null);
-    setMessages(prev => [...prev, STRANGER_DISCONNECTED_MSG]);
+    setMessages([]); // Clear history immediately on disconnect
     mainConnRef.current = null;
     isMatchmakerRef.current = false;
     
