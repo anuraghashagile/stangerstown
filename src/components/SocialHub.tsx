@@ -119,11 +119,16 @@ export const SocialHub = React.memo<SocialHubProps>(({
   // Handle Global Toast Logic
   useEffect(() => {
     if (activeTab === 'global') {
-      setShowGlobalToast(true);
-      if (globalToastTimerRef.current) clearTimeout(globalToastTimerRef.current);
-      globalToastTimerRef.current = setTimeout(() => {
-        setShowGlobalToast(false);
-      }, 10000); // 10 seconds
+      const hasSeen = localStorage.getItem('global_toast_seen');
+      if (!hasSeen) {
+        setShowGlobalToast(true);
+        localStorage.setItem('global_toast_seen', 'true');
+        
+        if (globalToastTimerRef.current) clearTimeout(globalToastTimerRef.current);
+        globalToastTimerRef.current = setTimeout(() => {
+          setShowGlobalToast(false);
+        }, 10000); // 10 seconds
+      }
     } else {
       setShowGlobalToast(false);
       if (globalToastTimerRef.current) clearTimeout(globalToastTimerRef.current);
@@ -328,7 +333,6 @@ export const SocialHub = React.memo<SocialHubProps>(({
         text: msg.text || (msg.type === 'image' ? 'Image' : 'Audio'),
         senderName: msg.sender === 'me' ? 'You' : (msg.senderName || 'Stranger')
      });
-     // If input is not focused, maybe focus it?
   };
 
   const openPrivateChat = (peerId: string, profile?: UserProfile) => {
@@ -347,7 +351,6 @@ export const SocialHub = React.memo<SocialHubProps>(({
   };
 
   const handleFriendRequest = (peerId: string) => {
-     // Use the provided handler if available, otherwise just use the ID
      if (sendDirectFriendRequest) {
         sendDirectFriendRequest(peerId);
      }
@@ -367,10 +370,8 @@ export const SocialHub = React.memo<SocialHubProps>(({
         const online = onlineUsers.find(u => u.profile?.uid === friend.profile.uid);
         if (online) return online.peerId;
      }
-     // Fallback to searching by ID (legacy) or just return the last known ID
      const onlineLegacy = onlineUsers.find(u => u.peerId === friend.id);
      if (onlineLegacy) return friend.id;
-     
      return null; // Offline
   };
 
@@ -389,12 +390,10 @@ export const SocialHub = React.memo<SocialHubProps>(({
      return (Object.values(unreadCounts) as number[]).reduce((a, b) => a + b, 0) + friendRequests.length;
   };
 
-  // --- Filtering Logic ---
   const filteredFriendsList = friends.filter(f => 
     !searchQuery || f.profile.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Revised Online/Offline Split using stable UIDs
   const onlineFriends = filteredFriendsList.filter(f => resolveCurrentPeerId(f) !== null);
   const offlineFriends = filteredFriendsList.filter(f => resolveCurrentPeerId(f) === null);
   
