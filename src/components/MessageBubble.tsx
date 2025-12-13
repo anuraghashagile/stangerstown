@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Message } from '../types';
 import { clsx } from 'clsx';
-import { Smile, Pencil, Check, CheckCheck, Reply } from 'lucide-react';
+import { Smile, Pencil, Check, CheckCheck, Reply, Play, Pause } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -12,6 +12,111 @@ interface MessageBubbleProps {
 }
 
 const PRESET_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+// Custom Audio Player Component
+const AudioPlayer = ({ src, isMe }: { src: string; isMe: boolean }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setProgress(0);
+    };
+    
+    const handleLoadedMetadata = () => {
+       setDuration(audio.duration);
+    };
+
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    return () => {
+      audio.removeEventListener('timeupdate', updateProgress);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, []);
+  
+  const formatTime = (time: number) => {
+    if (!time) return "0:00";
+    const min = Math.floor(time / 60);
+    const sec = Math.floor(time % 60);
+    return `${min}:${sec < 10 ? '0' + sec : sec}`;
+  };
+
+  return (
+    <div className="flex items-center gap-3 min-w-[200px] py-1 select-none">
+      <button 
+        onClick={togglePlay} 
+        className={clsx(
+          "w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0",
+          isMe 
+            ? "bg-white/20 hover:bg-white/30 text-white" 
+            : "bg-brand-100 hover:bg-brand-200 text-brand-600 dark:bg-slate-700 dark:text-white"
+        )}
+      >
+        {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
+      </button>
+
+      {/* Waveform Visualization */}
+      <div className="flex-1 h-6 flex items-center gap-[3px] justify-center">
+        {[...Array(24)].map((_, i) => (
+          <div
+            key={i}
+            className={clsx(
+              "w-1 rounded-full transition-all",
+              // Blue color for stranger messages as requested, lighter for 'me' to contrast with blue bubble
+              isMe ? "bg-brand-100/60" : "bg-brand-500" 
+            )}
+            style={{
+              height: isPlaying ? '100%' : `${20 + (Math.sin(i) + 1) * 30}%`, // Static wave or animated
+              animation: isPlaying ? `wave 1s ease-in-out infinite` : 'none',
+              animationDelay: `${i * 0.05}s`
+            }}
+          />
+        ))}
+      </div>
+      
+      <span className={clsx("text-[10px] font-medium w-8 text-right tabular-nums", isMe ? "text-brand-100" : "text-slate-400")}>
+         {isPlaying && audioRef.current ? formatTime(audioRef.current.currentTime) : formatTime(duration)}
+      </span>
+
+      <audio ref={audioRef} src={src} className="hidden" />
+      
+      <style>{`
+        @keyframes wave {
+          0%, 100% { height: 20%; opacity: 0.5; }
+          50% { height: 80%; opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 export const MessageBubble = React.memo<MessageBubbleProps>(({ 
   message, 
@@ -220,8 +325,8 @@ export const MessageBubble = React.memo<MessageBubbleProps>(({
             )}
 
             {message.type === 'audio' && message.fileData && (
-              <div className="px-3 py-2 flex items-center gap-2 min-w-[200px]">
-                <audio controls src={message.fileData} className="w-full h-8 max-w-[250px]" />
+              <div className="p-2">
+                 <AudioPlayer src={message.fileData} isMe={isMe} />
               </div>
             )}
 

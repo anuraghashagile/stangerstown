@@ -184,7 +184,7 @@ export default function App() {
     if (sessionType === 'random') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, partnerTyping, sessionType, status]);
+  }, [messages, partnerTyping, partnerRecording, sessionType, status]);
 
   const handleStartClick = () => setShowJoinModal(true);
 
@@ -441,9 +441,18 @@ export default function App() {
         )}>
           
           <div className={clsx("max-w-4xl mx-auto p-2 sm:p-4", isSearching && "pointer-events-none")}>
-            {/* Typing Indicator */}
-            {partnerTyping && (
-              <div className="h-5 px-4 mb-1 text-xs text-brand-500 font-medium animate-pulse flex items-center gap-1">typing...</div>
+            {/* Status Indicators (Typing / Recording) */}
+            {(partnerTyping || partnerRecording) && (
+              <div className="h-5 px-4 mb-1 text-xs text-brand-500 font-medium flex items-center gap-2">
+                 {partnerTyping && (
+                   <span className="animate-pulse">typing...</span>
+                 )}
+                 {!partnerTyping && partnerRecording && (
+                    <span className="animate-pulse flex items-center gap-1">
+                       <Mic size={12} className="animate-bounce" /> recording audio...
+                    </span>
+                 )}
+              </div>
             )}
             
             {/* Replying To Banner */}

@@ -87,6 +87,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
   const [activePeer, setActivePeer] = useState<{id: string, profile: UserProfile} | null>(null);
   const [localChatHistory, setLocalChatHistory] = useState<Message[]>([]);
   const [peerTypingStatus, setPeerTypingStatus] = useState<Record<string, boolean>>({});
+  const [peerRecordingStatus, setPeerRecordingStatus] = useState<Record<string, boolean>>({});
   const [viewingProfile, setViewingProfile] = useState<{id: string, profile: UserProfile} | null>(null);
   const [confirmRemoveFriend, setConfirmRemoveFriend] = useState<string | null>(null);
   const [triggerTarget, setTriggerTarget] = useState<HTMLElement | null>(null);
@@ -213,7 +214,11 @@ export const SocialHub = React.memo<SocialHubProps>(({
   }, [incomingReaction, activePeer]);
 
   useEffect(() => {
-    if (incomingDirectStatus?.type === 'typing') setPeerTypingStatus(prev => ({ ...prev, [incomingDirectStatus.peerId]: incomingDirectStatus.value }));
+    if (incomingDirectStatus?.type === 'typing') {
+      setPeerTypingStatus(prev => ({ ...prev, [incomingDirectStatus.peerId]: incomingDirectStatus.value }));
+    } else if (incomingDirectStatus?.type === 'recording') {
+      setPeerRecordingStatus(prev => ({ ...prev, [incomingDirectStatus.peerId]: incomingDirectStatus.value }));
+    }
   }, [incomingDirectStatus]);
 
   useEffect(() => {
@@ -222,7 +227,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
 
   useEffect(() => {
     if (activePeer && isOpen) privateMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [localChatHistory, activePeer, isOpen, peerTypingStatus]);
+  }, [localChatHistory, activePeer, isOpen, peerTypingStatus, peerRecordingStatus]);
 
   const handleGlobalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +309,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
       };
       mediaRecorder.start();
       setIsRecordingPrivate(true);
+      // TODO: Add support for direct recording status updates if needed in future
     } catch (err) { console.error("Mic error", err); }
   };
 
@@ -759,7 +765,19 @@ export const SocialHub = React.memo<SocialHubProps>(({
 
             {activePeer && (
                <div className="flex-1 flex flex-col p-4 overflow-hidden min-h-0 relative bg-slate-50/30 dark:bg-black/20 animate-in slide-in-from-right-10 duration-200">
-                  {peerTypingStatus[activePeer.id] && <div className="absolute top-0 left-0 right-0 h-6 bg-transparent z-10 flex items-center px-4 justify-center"><span className="text-xs text-brand-500 animate-pulse font-medium bg-white/80 dark:bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm">typing...</span></div>}
+                  {/* Private Chat Status Bar */}
+                  {(peerTypingStatus[activePeer.id] || peerRecordingStatus[activePeer.id]) && (
+                    <div className="absolute top-0 left-0 right-0 h-8 bg-transparent z-10 flex items-center px-4 justify-center pointer-events-none">
+                      <span className="text-xs text-brand-500 animate-pulse font-medium bg-white/90 dark:bg-black/60 px-3 py-1 rounded-full backdrop-blur-md shadow-sm border border-brand-500/10 flex items-center gap-1">
+                        {peerTypingStatus[activePeer.id] ? "typing..." : (
+                           <>
+                              <Mic size={10} className="animate-bounce" /> recording audio...
+                           </>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex-1 space-y-3 mb-4 overflow-y-auto min-h-0 pr-1 pt-4">
                      {localChatHistory.map(msg => (
                        <MessageBubble key={msg.id} message={msg} senderName={activePeer.profile.username} onReact={(emoji) => handleReactionSend(msg.id, emoji)} onEdit={onEditMessage} onReply={handleReply} />
