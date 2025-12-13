@@ -509,14 +509,7 @@ export default function App() {
           partnerProfile={sessionType === 'random' ? partnerProfile : null} 
           onOpenSettings={() => setShowSettingsModal(true)}
           onEditProfile={() => setShowEditProfileModal(true)}
-          onAddFriend={() => {
-             if (isCurrentPartnerFriend) {
-                setFriendNotification("You are already friends!");
-                setTimeout(() => setFriendNotification(null), 3000);
-             } else {
-                sendFriendRequest();
-             }
-          }}
+          onAddFriend={() => sendFriendRequest()}
           isFriend={isCurrentPartnerFriend}
         />
       )}

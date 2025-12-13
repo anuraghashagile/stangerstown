@@ -402,7 +402,7 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
                return [...prev, { id: conn.peer, profile: payload.payload, addedAt: Date.now(), lastSeen: Date.now() }];
             });
             // Show notification
-            setNotification(`${payload.payload.username} accepted your friend request.`);
+            setNotification(`${payload.payload.username} accepted your friend request`);
          }
       }
       
@@ -534,24 +534,57 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
   // --- FRIEND ACTIONS ---
   
   const sendFriendRequest = () => {
+     if (partnerProfile) {
+        const isFriend = friends.some(f => 
+           (f.profile.uid && partnerProfile.uid && f.profile.uid === partnerProfile.uid) || 
+           f.id === partnerPeerId
+        );
+        if (isFriend) {
+           setNotification("Already friends");
+           return;
+        }
+     }
+  
      if (mainConnRef.current?.open && userProfile) {
         mainConnRef.current.send({ type: 'friend_request', payload: userProfile });
-        setNotification("Friend request sent.");
+        setNotification("Friend request sent");
      }
   };
   
   const sendDirectFriendRequest = (peerId: string) => {
+     // Check for existing friendship using available data
+     const onlineUser = onlineUsers.find(u => u.peerId === peerId);
+     const targetUid = onlineUser?.profile?.uid;
+     
+     const isFriend = friends.some(f => 
+        (targetUid && f.profile.uid && f.profile.uid === targetUid) || 
+        f.id === peerId
+     );
+     
+     if (isFriend) {
+        setNotification("Already friends");
+        return;
+     }
+     
      const conn = directConnsRef.current.get(peerId);
      if (conn?.open && userProfile) {
         conn.send({ type: 'friend_request', payload: userProfile });
-        setNotification("Friend request sent.");
+        setNotification("Friend request sent");
      } else if (peerRef.current) {
         const temp = peerRef.current.connect(peerId, { metadata: { type: 'direct' }});
+        
+        // Optimistic feedback
+        setNotification("Sending friend request...");
+        
         temp.on('open', () => {
            temp.send({ type: 'profile', payload: userProfile });
            temp.send({ type: 'friend_request', payload: userProfile });
-           setNotification("Friend request sent.");
+           setNotification("Friend request sent");
            setTimeout(() => temp.close(), 2000); 
+        });
+        
+        temp.on('error', () => {
+            setNotification("Failed to send request. User might be offline.");
         });
      }
   };
@@ -567,9 +600,22 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
      });
      setFriendRequests(prev => prev.filter(r => r.peerId !== request.peerId));
      
+     // Notify the other user that we accepted
      const conn = mainConnRef.current?.peer === request.peerId ? mainConnRef.current : directConnsRef.current.get(request.peerId);
      if (conn?.open && userProfile) {
         conn.send({ type: 'friend_accept', payload: userProfile });
+     } else if (peerRef.current) {
+         // Connect temporarily to send the accept message
+         try {
+             const temp = peerRef.current.connect(request.peerId, { metadata: { type: 'direct' }});
+             temp.on('open', () => {
+                temp.send({ type: 'profile', payload: userProfile });
+                temp.send({ type: 'friend_accept', payload: userProfile });
+                setTimeout(() => temp.close(), 2000); 
+             });
+         } catch(e) {
+             console.error("Could not send accept notification", e);
+         }
      }
      
      // Save to local storage
@@ -578,6 +624,9 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
         const updated = [...current, { id: request.peerId, profile: request.profile, addedAt: Date.now(), lastSeen: Date.now() }];
         localStorage.setItem('chat_friends', JSON.stringify(updated));
      }, 0);
+     
+     // Notify self
+     setNotification(`You are now friends with ${request.profile.username}`);
   };
   
   const rejectFriendRequest = (peerId: string) => {
