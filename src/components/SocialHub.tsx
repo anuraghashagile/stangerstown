@@ -681,18 +681,24 @@ export const SocialHub = React.memo<SocialHubProps>(({
                   {/* RECENT TAB */}
                   {activeTab === 'recent' && (
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                      {filteredRecentPeers.map((peer) => (
-                        <div key={peer.id} onClick={() => openPrivateChat(peer.peerId, peer.profile)} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:shadow-md transition-all duration-100 group active:scale-[0.99]">
+                      {filteredRecentPeers.map((peer) => {
+                         const onlineMatch = onlineUsers.find(u => u.profile?.uid && peer.profile.uid && u.profile.uid === peer.profile.uid);
+                         const targetId = onlineMatch ? onlineMatch.peerId : peer.peerId;
+                         const isOnline = !!onlineMatch;
+
+                         return (
+                        <div key={peer.id} onClick={() => openPrivateChat(targetId, peer.profile)} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:shadow-md transition-all duration-100 group active:scale-[0.99] relative">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-lg font-bold shrink-0 relative">
                               {peer.profile.username[0].toUpperCase()}
-                              {unreadCounts[peer.peerId] > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
+                              {unreadCounts[peer.id] > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
+                              {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#0A0A0F] rounded-full"></span>}
                             </div>
                             <div className="min-w-0"><div className="text-sm font-bold text-slate-900 dark:text-white truncate">{peer.profile.username}</div><div className="text-xs text-slate-500">{new Date(peer.metAt).toLocaleDateString()}</div></div>
                           </div>
                           <div className="p-2 text-slate-400 group-hover:text-brand-500"><MessageCircle size={18} /></div>
                         </div>
-                      ))}
+                      )})}
                       {filteredRecentPeers.length === 0 && <div className="text-center text-slate-500 py-10">{searchQuery ? 'No matching history.' : 'No recent history.'}</div>}
                     </div>
                   )}

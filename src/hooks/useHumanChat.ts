@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 import { supabase, fetchOfflineMessages } from '../lib/supabase';
-import { Message, ChatMode, PeerData, PresenceState, UserProfile, ConnectionMetadata, DirectMessageEvent, DirectStatusEvent, Friend, FriendRequest, ReplyInfo } from '../types';
+import { Message, ChatMode, PeerData, PresenceState, UserProfile, ConnectionMetadata, DirectMessageEvent, DirectStatusEvent, Friend, FriendRequest, ReplyInfo, RecentPeer } from '../types';
 import { ICE_SERVERS, STRANGER_DISCONNECTED_MSG } from '../constants';
 
 const MATCHMAKING_CHANNEL = 'global-lobby-v1';
@@ -314,6 +314,27 @@ export const useHumanChat = (userProfile: UserProfile | null, persistentId?: str
                  type: 'text'
                }
             ]);
+
+            // Save to Recent Peers
+            try {
+               const existing = localStorage.getItem('recent_peers');
+               let recents: RecentPeer[] = existing ? JSON.parse(existing) : [];
+               
+               // Deduplicate by UID (preferred) or PeerID
+               recents = recents.filter(r => {
+                 if (r.profile.uid && profile.uid) return r.profile.uid !== profile.uid;
+                 return r.peerId !== conn.peer;
+               });
+               
+               recents.unshift({
+                 id: profile.uid || conn.peer,
+                 peerId: conn.peer,
+                 profile: profile,
+                 metAt: Date.now()
+               });
+               
+               localStorage.setItem('recent_peers', JSON.stringify(recents.slice(0, 50)));
+            } catch(e) { console.error(e); }
          }
       }
       
