@@ -518,158 +518,135 @@ export default function App() {
         </div>
       </div>
     );
-  };
+  }
 
   return (
-    <div className={clsx(
-      "h-[100dvh] bg-slate-50 dark:bg-slate-950 transition-colors flex flex-col fixed inset-0 overflow-hidden",
-      settings.vanishMode && "dark:bg-slate-950" 
-    )}>
-      {settings.vanishMode && (
-        <div className="absolute inset-0 pointer-events-none z-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-      )}
-
-      {(status !== ChatMode.IDLE || userProfile) && (
-        <Header 
-          onlineCount={onlineUsers.length} 
-          mode={status} 
-          theme={theme}
-          toggleTheme={toggleTheme}
-          onDisconnect={() => disconnect()}
-          partnerProfile={sessionType === 'random' ? partnerProfile : null} 
-          onOpenSettings={() => setShowSettingsModal(true)}
-          onEditProfile={() => setShowEditProfileModal(true)}
-          onAddFriend={() => sendFriendRequest()}
-          isFriend={isCurrentPartnerFriend}
-        />
-      )}
-
-      {/* FRIEND REQUEST TOAST */}
-      {friendRequests.length > 0 && (
-        <div className="fixed top-20 right-4 sm:right-6 z-[80] animate-in slide-in-from-right-10 fade-in duration-300 pointer-events-auto">
-          <div className="bg-white dark:bg-[#0A0A0F] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col gap-3 w-72">
-             <div className="flex items-start gap-3">
-               <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold">
-                  {friendRequests[0].profile.username[0].toUpperCase()}
-               </div>
-               <div>
-                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Friend Request</h4>
-                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {friendRequests[0].profile.username} wants to connect!
-                 </p>
-               </div>
-             </div>
-             <div className="flex gap-2">
-               <Button onClick={() => acceptFriendRequest && acceptFriendRequest(friendRequests[0])} className="flex-1 py-1.5 text-xs h-8">Accept</Button>
-               <Button variant="secondary" onClick={() => rejectFriendRequest && rejectFriendRequest(friendRequests[0].peerId)} className="flex-1 py-1.5 text-xs h-8">Ignore</Button>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {friendNotification && (
-         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-5 duration-300">
-            <div className="bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-lg flex items-center gap-3 text-sm font-bold">
-               <Bell size={16} fill="currentColor" /> {friendNotification}
-            </div>
-         </div>
-      )}
-      
-      {notification && (
-         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-5 duration-300">
-            <div className="bg-brand-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-bold">
-               <Check size={16} /> {notification}
-            </div>
-         </div>
-      )}
-
-      {error && sessionType === 'random' && (
-         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-5">
-            <div className="bg-red-500 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium">
-              <AlertTriangle size={16} /> {error}
-            </div>
-         </div>
-      )}
-
-      {settings.vanishMode && status === ChatMode.CONNECTED && sessionType === 'random' && (
-         <div className="absolute top-16 left-0 right-0 z-40 flex justify-center pointer-events-none animate-in slide-in-from-top-4">
-            <div className="bg-purple-500/10 backdrop-blur-md border border-purple-500/20 px-4 py-1.5 rounded-b-xl text-[10px] font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-purple-900/20">
-               <EyeOff size={12} /> Vanish Mode Active
-            </div>
-         </div>
-      )}
-      
-      <ImageConfirmationModal 
-        isOpen={!!pendingImage}
-        imageSrc={pendingImage}
-        onClose={() => setPendingImage(null)}
-        onConfirm={handleConfirmImage}
-      />
-
-      {previewImage && (
-         <ImageViewer src={previewImage} onClose={() => setPreviewImage(null)} />
-      )}
-
-      <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Loader /></div>}>
-        {renderMainContent()}
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} settings={settings} onUpdateSettings={handleUpdateSettings}/>
-      </Suspense>
-      
-      <Suspense fallback={null}>
-        {showJoinModal && (
-          <JoinModal onClose={() => setShowJoinModal(false)} onJoin={handleJoin} />
-        )}
-      </Suspense>
-      
-      <Suspense fallback={null}>
-        {showEditProfileModal && userProfile && (
-          <JoinModal onClose={() => setShowEditProfileModal(false)} onJoin={handleUpdateProfile} initialProfile={userProfile} isEditing={true}/>
-        )}
-      </Suspense>
-      
-      <Suspense fallback={null}>
-        <EditMessageModal isOpen={!!editingMessage} onClose={() => setEditingMessage(null)} initialText={editingMessage?.text || ''} onSave={saveEditedMessage} />
-      </Suspense>
-
-      {userProfile && (
-        <Suspense fallback={null}>
-          <SocialHub 
-            onlineUsers={onlineUsers} 
-            onCallPeer={handleDirectCall} 
-            globalMessages={globalMessages}
-            sendGlobalMessage={sendGlobalMessage}
-            myProfile={userProfile}
-            myPeerId={myPeerId}
-            privateMessages={messages}
-            sendPrivateMessage={sendMessage} 
-            sendDirectMessage={sendDirectMessage} 
-            sendDirectImage={sendDirectImage}
-            sendDirectAudio={sendDirectAudio}
-            sendDirectTyping={sendDirectTyping}
-            sendDirectFriendRequest={sendDirectFriendRequest}
-            sendDirectReaction={sendDirectReaction}
-            sendReaction={sendReaction}
-            currentPartner={partnerProfile}
-            chatStatus={status}
-            error={error}
-            onEditMessage={initiateEdit}
-            sessionType={sessionType}
-            incomingReaction={incomingReaction}
-            incomingDirectMessage={incomingDirectMessage}
-            incomingDirectStatus={incomingDirectStatus} 
-            onCloseDirectChat={() => setSessionType('random')} 
-            friends={friends} 
-            friendRequests={friendRequests}
-            removeFriend={removeFriend}
-            acceptFriendRequest={acceptFriendRequest}
-            rejectFriendRequest={rejectFriendRequest}
-            isPeerConnected={isPeerConnected}
+    <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-slate-50 dark:bg-[#05050A]"><Loader /></div>}>
+      <div className={clsx("h-[100dvh] flex flex-col font-sans transition-colors duration-200 overflow-hidden", theme === 'dark' ? "bg-[#05050A]" : "bg-slate-50")}>
+        
+        {(status !== ChatMode.IDLE || userProfile) && (
+          <Header 
+            onlineCount={onlineUsers.length} 
+            mode={status}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            onDisconnect={disconnect}
+            partnerProfile={partnerProfile}
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onEditProfile={() => setShowEditProfileModal(true)}
+            onAddFriend={partnerPeerId ? sendFriendRequest : undefined}
+            isFriend={isCurrentPartnerFriend}
           />
-        </Suspense>
-      )}
-    </div>
+        )}
+
+        {renderMainContent()}
+
+        {showJoinModal && (
+          <Suspense fallback={null}>
+            <JoinModal 
+              onClose={() => setShowJoinModal(false)} 
+              onJoin={handleJoin} 
+            />
+          </Suspense>
+        )}
+
+        {showEditProfileModal && userProfile && (
+           <Suspense fallback={null}>
+             <JoinModal 
+               onClose={() => setShowEditProfileModal(false)} 
+               onJoin={handleUpdateProfile}
+               initialProfile={userProfile}
+               isEditing
+             />
+           </Suspense>
+        )}
+
+        {showSettingsModal && (
+           <Suspense fallback={null}>
+             <SettingsModal 
+               isOpen={showSettingsModal} 
+               onClose={() => setShowSettingsModal(false)}
+               settings={settings}
+               onUpdateSettings={handleUpdateSettings}
+             />
+           </Suspense>
+        )}
+        
+        {editingMessage && (
+           <Suspense fallback={null}>
+             <EditMessageModal
+               isOpen={!!editingMessage}
+               onClose={() => setEditingMessage(null)}
+               initialText={editingMessage.text}
+               onSave={saveEditedMessage}
+             />
+           </Suspense>
+        )}
+        
+        {userProfile && (
+           <Suspense fallback={null}>
+              <SocialHub 
+                 onlineUsers={onlineUsers}
+                 onCallPeer={handleDirectCall}
+                 globalMessages={globalMessages}
+                 sendGlobalMessage={sendGlobalMessage}
+                 myProfile={userProfile}
+                 myPeerId={myPeerId}
+                 privateMessages={[]} 
+                 sendPrivateMessage={() => {}}
+                 sendDirectMessage={sendDirectMessage}
+                 sendDirectImage={sendDirectImage}
+                 sendDirectAudio={sendDirectAudio}
+                 sendDirectTyping={sendDirectTyping}
+                 sendDirectFriendRequest={sendDirectFriendRequest}
+                 sendDirectReaction={sendDirectReaction}
+                 sendReaction={sendReaction}
+                 currentPartner={partnerProfile}
+                 chatStatus={status}
+                 error={error}
+                 onEditMessage={initiateEdit}
+                 sessionType={sessionType}
+                 incomingReaction={incomingReaction}
+                 incomingDirectMessage={incomingDirectMessage}
+                 incomingDirectStatus={incomingDirectStatus}
+                 friends={friends}
+                 friendRequests={friendRequests}
+                 removeFriend={removeFriend}
+                 acceptFriendRequest={acceptFriendRequest}
+                 rejectFriendRequest={rejectFriendRequest}
+                 isPeerConnected={isPeerConnected}
+              />
+           </Suspense>
+        )}
+        
+        {notification && (
+           <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[150] animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-none w-full max-w-sm px-4 flex justify-center">
+              <div className="bg-slate-800/90 dark:bg-white/10 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-xl border border-white/10 text-sm font-medium flex items-center gap-2 truncate max-w-full">
+                 <Bell size={16} className="text-brand-400 shrink-0" /> <span className="truncate">{notification}</span>
+              </div>
+           </div>
+        )}
+        
+        {friendNotification && (
+            <div className="fixed top-28 left-1/2 -translate-x-1/2 z-[150] animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-none w-full max-w-sm px-4 flex justify-center">
+              <div className="bg-emerald-500/90 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-xl border border-white/10 text-sm font-medium flex items-center gap-2 truncate max-w-full">
+                 <Sparkles size={16} className="text-yellow-300 shrink-0" /> <span className="truncate">{friendNotification}</span>
+              </div>
+           </div>
+        )}
+
+        <ImageConfirmationModal 
+          isOpen={!!pendingImage}
+          imageSrc={pendingImage}
+          onClose={() => setPendingImage(null)}
+          onConfirm={handleConfirmImage}
+        />
+
+        {previewImage && (
+           <ImageViewer src={previewImage} onClose={() => setPreviewImage(null)} />
+        )}
+
+      </div>
+    </Suspense>
   );
 }
