@@ -113,6 +113,13 @@ export const SocialHub = React.memo<SocialHubProps>(({
     return `chat_history_${peerId}`;
   };
 
+  // Helper for Gender-based Avatar Colors
+  const getAvatarGradient = (gender?: string) => {
+    if (gender === 'Female') return "from-pink-400 to-rose-500 shadow-pink-500/30";
+    if (gender === 'Male') return "from-blue-400 to-indigo-500 shadow-blue-500/30";
+    return "from-brand-400 to-violet-500 shadow-brand-500/30";
+  };
+
   useEffect(() => {
     const checkAnchor = () => {
        const el = document.getElementById('social-hub-trigger-anchor');
@@ -419,7 +426,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
         reader.onloadend = () => {
            const base64Audio = reader.result as string;
            const newMsgId = Date.now().toString() + Math.random().toString(36).substring(2);
-           const newMsg: Message = { id: newMsgId, fileData: base64Audio, type: 'audio', sender: 'me', timestamp: Date.now(), reactions: [], status: 'sent' };
+           const newMsg: Message = { id: newMsgId, fileData: base64Audio, type: 'audio', sender: 'me', timestamp: Date.now(), reactions: [], status: 'sent', };
            if (activePeer) {
              addMessageToLocal(newMsg, activePeer.id);
              sendDirectAudio?.(activePeer.id, base64Audio, newMsgId);
@@ -634,7 +641,9 @@ export const SocialHub = React.memo<SocialHubProps>(({
                      <button onClick={() => setViewingProfile(null)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-150 active:scale-90"><X size={20} className="text-slate-500" /></button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center text-white text-4xl font-bold shadow-2xl mb-4">{viewingProfile.profile.username[0].toUpperCase()}</div>
+                      <div className={clsx("w-24 h-24 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-4xl font-bold shadow-2xl mb-4", getAvatarGradient(viewingProfile.profile.gender))}>
+                          {viewingProfile.profile.username[0].toUpperCase()}
+                      </div>
                       <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{viewingProfile.profile.username}</h2>
                       <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-6"><span>{viewingProfile.profile.age} years</span><span>•</span><span>{viewingProfile.profile.gender}</span></div>
                       <div className="w-full space-y-4">
@@ -716,19 +725,27 @@ export const SocialHub = React.memo<SocialHubProps>(({
                       {filteredOnlineUsers.map((user, i) => (
                         <div key={i} className={clsx("flex items-center justify-between p-3.5 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 transition-all duration-100 shadow-sm hover:shadow-md active:scale-[0.99]", user.peerId === myPeerId ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-brand-200 dark:hover:border-white/10")}>
                           <div className="flex flex-1 items-center gap-3" onClick={() => { if (user.peerId !== myPeerId && user.profile) setViewingProfile({ id: user.peerId, profile: user.profile }); }}>
-                                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center text-white font-bold shrink-0 shadow-lg relative">
+                                <div className={clsx("w-11 h-11 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold shrink-0 shadow-lg relative", getAvatarGradient(user.profile?.gender))}>
                                   {user.profile?.username?.[0]?.toUpperCase() || '?'}
                                   {unreadCounts[user.peerId] > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
                                   {/* Online Dot */}
                                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-[#0A0A0F] rounded-full"></span>
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                    {user.profile?.username || 'Anonymous'} {user.profile?.username === myProfile?.username && <span className="text-[10px] text-brand-500 bg-brand-500/10 px-1.5 rounded-full shrink-0">(You)</span>}
-                                  </div>
-                                  <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                    <span>{user.profile ? `${user.profile.age} • ${user.profile.gender}` : 'Guest'}</span>
-                                  </div>
+                                   <div className="flex items-center gap-2 mb-0.5">
+                                      <span className={clsx(
+                                        "text-sm font-bold truncate rounded-md px-2 py-0.5 transition-colors",
+                                        user.profile?.gender === 'Female' ? "bg-pink-100 dark:bg-pink-500/20 text-slate-900 dark:text-pink-100" :
+                                        user.profile?.gender === 'Male' ? "bg-blue-100 dark:bg-blue-500/20 text-slate-900 dark:text-blue-100" :
+                                        "text-slate-900 dark:text-white"
+                                      )}>
+                                        {user.profile?.username || 'Anonymous'}
+                                      </span>
+                                      {user.profile?.username === myProfile?.username && <span className="text-[10px] text-brand-500 bg-brand-500/10 px-1.5 rounded-full shrink-0">(You)</span>}
+                                   </div>
+                                   <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 px-2">
+                                     <span>{user.profile ? `${user.profile.age} • ${user.profile.gender}` : 'Guest'}</span>
+                                   </div>
                                 </div>
                           </div>
                         </div>
@@ -748,7 +765,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
                              {filteredFriendRequests.map((req, idx) => (
                                 <div key={idx} className="p-3 bg-white dark:bg-white/5 border border-brand-500/20 rounded-2xl shadow-sm flex items-center justify-between">
                                    <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold">{req.profile.username[0].toUpperCase()}</div>
+                                      <div className={clsx("w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold", getAvatarGradient(req.profile.gender))}>{req.profile.username[0].toUpperCase()}</div>
                                       <div><div className="text-sm font-bold text-slate-900 dark:text-white">{req.profile.username}</div><div className="text-xs text-slate-500">Wants to connect</div></div>
                                    </div>
                                    <div className="flex gap-2">
@@ -778,7 +795,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
                                return (
                                <div key={friend.id} onClick={() => openPrivateChat(targetId, friend.profile)} className="flex items-center justify-between p-3 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:shadow-md transition-all duration-100 group hover:border-brand-200 dark:hover:border-white/10 active:scale-[0.99]">
                                  <div className="flex items-center gap-3">
-                                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center text-white font-bold shrink-0 relative">
+                                   <div className={clsx("w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold shrink-0 relative", getAvatarGradient(friend.profile.gender))}>
                                      {friend.profile.username[0].toUpperCase()}
                                      {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
                                      {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#0A0A0F] rounded-full animate-pulse"></span>}
@@ -833,7 +850,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
                              className="flex items-center justify-between p-3 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:shadow-md transition-all duration-100 group active:scale-[0.99] relative"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-lg font-bold shrink-0 relative">
+                            <div className={clsx("w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-lg font-bold shrink-0 relative", getAvatarGradient(peer.profile.gender))}>
                               {peer.profile.username[0].toUpperCase()}
                               {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border border-white dark:border-slate-900" />}
                               {isOnline && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#0A0A0F] rounded-full"></span>}
