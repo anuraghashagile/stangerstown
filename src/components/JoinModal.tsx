@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { X, Globe, ArrowRight } from 'lucide-react';
+import { X, Globe, MapPin } from 'lucide-react';
 import { UserProfile } from '../types';
-import { COMMON_INTERESTS } from '../constants';
+import { COMMON_INTERESTS, INDIA_STATES } from '../constants';
 import { Button } from './Button';
 import { clsx } from 'clsx';
 
@@ -18,6 +19,20 @@ export const JoinModal: React.FC<JoinModalProps> = ({ onClose, onJoin, initialPr
   const [age, setAge] = useState(initialProfile?.age || '18-21');
   const [interests, setInterests] = useState<string[]>(initialProfile?.interests || []);
   const [interestInput, setInterestInput] = useState('');
+  
+  // Extract initial state if editing
+  const getInitialState = () => {
+    if (initialProfile?.location) {
+      const parts = initialProfile.location.split(',');
+      if (parts.length > 0) {
+        const stateName = parts[0].trim();
+        if (INDIA_STATES.includes(stateName)) return stateName;
+      }
+    }
+    return INDIA_STATES[0];
+  };
+
+  const [selectedState, setSelectedState] = useState(getInitialState());
 
   const toggleInterest = (interest: string) => {
     if (interests.includes(interest)) {
@@ -30,12 +45,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({ onClose, onJoin, initialPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const profile = {
+    const profile: UserProfile = {
       username: name || 'Stranger',
       gender,
       age,
       interests,
-      location: 'India (General)' 
+      location: `${selectedState}, India` 
     };
     
     // Explicitly save to local storage here as well for immediate persistence
@@ -114,6 +129,32 @@ export const JoinModal: React.FC<JoinModalProps> = ({ onClose, onJoin, initialPr
               </div>
             </div>
 
+            {/* NEW LOCATION SECTION */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Country</label>
+                <div className="flex items-center gap-2 w-full h-14 px-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed">
+                  <Globe size={16} />
+                  <span>India</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">State</label>
+                <div className="relative">
+                  <select 
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="w-full h-14 px-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all appearance-none"
+                  >
+                    {INDIA_STATES.map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-50 text-xs">▼</div>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Interests</label>
               <input 
@@ -162,7 +203,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ onClose, onJoin, initialPr
             <Button 
               type="submit" 
               fullWidth 
-              className="h-14 text-lg rounded-2xl bg-white text-black hover:bg-slate-200 shadow-xl mt-4 border-none font-bold"
+              className="h-14 text-lg rounded-2xl bg-brand-500 text-white hover:bg-brand-600 shadow-xl mt-4 border-none font-bold"
             >
               {isEditing ? 'Save Changes' : 'Start Chatting'}
             </Button>
