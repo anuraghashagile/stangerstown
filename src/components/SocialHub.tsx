@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Users, History, Globe, MessageCircle, X, Wifi, Heart, ArrowLeft, Send, UserPlus, Check, Trash2, Image as ImageIcon, Mic, Square, MapPin, Smile, Clock, Search, Info, UserCheck, Infinity } from 'lucide-react';
+import { Users, History, Globe, MessageCircle, X, Wifi, Heart, ArrowLeft, Send, UserPlus, Check, Trash2, Image as ImageIcon, Mic, Square, MapPin, Smile, Clock, Search, Info, UserCheck, Filter } from 'lucide-react';
 import { UserProfile, PresenceState, RecentPeer, Message, ChatMode, SessionType, Friend, FriendRequest, DirectMessageEvent, DirectStatusEvent, ReplyInfo } from '../types';
 import { clsx } from 'clsx';
 import { MessageBubble } from './MessageBubble';
 import { Button } from './Button';
 import { ImageViewer } from './ImageViewer';
 import { ImageConfirmationModal } from './ImageConfirmationModal';
+import { INDIA_STATES } from '../constants';
 
 interface SocialHubProps {
   onlineUsers: PresenceState[];
@@ -79,6 +80,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
   const [friends, setFriends] = useState<Friend[]>(friendsProp);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [stateFilter, setStateFilter] = useState<string>('All States');
   
   const [globalInput, setGlobalInput] = useState('');
   const [privateInput, setPrivateInput] = useState('');
@@ -135,6 +137,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
   // Reset search when changing tabs
   useEffect(() => {
     setSearchQuery('');
+    setStateFilter('All States');
   }, [activeTab]);
 
   // Handle Global Toast Logic
@@ -552,9 +555,11 @@ export const SocialHub = React.memo<SocialHubProps>(({
     !searchQuery || req.profile.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredOnlineUsers = onlineUsers.filter(u => 
-    !searchQuery || (u.profile?.username || 'Anonymous').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOnlineUsers = onlineUsers.filter(u => {
+    const matchesSearch = !searchQuery || (u.profile?.username || 'Anonymous').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesState = stateFilter === 'All States' || (u.profile?.location && u.profile.location.toLowerCase().includes(stateFilter.toLowerCase()));
+    return matchesSearch && matchesState;
+  });
   
   const filteredRecentPeers = recentPeers.filter(p =>
     !searchQuery || p.profile.username.toLowerCase().includes(searchQuery.toLowerCase())
@@ -619,7 +624,7 @@ export const SocialHub = React.memo<SocialHubProps>(({
             {/* --- REMOVE CONFIRMATION --- */}
             {confirmRemoveFriend && (
                <div className="absolute inset-0 z-[110] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
-                  <div className="bg-white dark:bg-[#1a1b26] p-6 rounded-2xl w-full max-w-sm text-center border border-slate-200 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
+                  <div className="bg-white dark:bg-[#1a1b26] p-6 rounded-2xl w-full max-sm text-center border border-slate-200 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
                      <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                        <Trash2 size={24} />
                      </div>
@@ -697,21 +702,36 @@ export const SocialHub = React.memo<SocialHubProps>(({
 
                 {/* --- SEARCH BAR --- */}
                 {['online', 'friends', 'recent'].includes(activeTab) && (
-                   <div className="px-4 pb-2 shrink-0 animate-in fade-in slide-in-from-top-1 duration-200">
-                      <div className="relative">
-                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                         <input 
-                            type="text" 
-                            placeholder={`Search ${activeTab}...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 placeholder:text-slate-400 transition-all"
-                         />
-                         {searchQuery && (
-                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
-                               <X size={14} />
-                            </button>
-                         )}
+                   <div className="px-4 pb-2 shrink-0 animate-in fade-in slide-in-from-top-1 duration-200 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                           <input 
+                              type="text" 
+                              placeholder={`Search ${activeTab}...`}
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              className="w-full bg-slate-100 dark:bg-white/5 border-none rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 placeholder:text-slate-400 transition-all"
+                           />
+                           {searchQuery && (
+                              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
+                                 <X size={14} />
+                              </button>
+                           )}
+                        </div>
+                        {activeTab === 'online' && (
+                          <div className="relative shrink-0 w-28">
+                             <select 
+                                value={stateFilter}
+                                onChange={(e) => setStateFilter(e.target.value)}
+                                className="w-full h-full bg-slate-100 dark:bg-white/5 border-none rounded-xl pl-3 pr-8 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 appearance-none font-medium"
+                             >
+                                <option>All States</option>
+                                {INDIA_STATES.map(st => <option key={st}>{st}</option>)}
+                             </select>
+                             <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                          </div>
+                        )}
                       </div>
                    </div>
                 )}
@@ -743,14 +763,28 @@ export const SocialHub = React.memo<SocialHubProps>(({
                                       </span>
                                       {user.profile?.username === myProfile?.username && <span className="text-[10px] text-brand-500 bg-brand-500/10 px-1.5 rounded-full shrink-0">(You)</span>}
                                    </div>
-                                   <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 px-2">
+                                   <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 px-2 truncate max-w-[180px]">
                                      <span>{user.profile ? `${user.profile.age} • ${user.profile.gender}` : 'Guest'}</span>
+                                     {user.profile?.location && (
+                                       <>
+                                         <span className="opacity-40">•</span>
+                                         <span className="truncate">{user.profile.location.split(',')[0]}</span>
+                                       </>
+                                     )}
                                    </div>
                                 </div>
                           </div>
                         </div>
                       ))}
-                      {filteredOnlineUsers.length === 0 && <div className="text-center text-slate-500 py-10">{searchQuery ? 'No matching users found.' : 'No users online.'}</div>}
+                      {filteredOnlineUsers.length === 0 && (
+                        <div className="text-center text-slate-500 py-10 flex flex-col items-center gap-2">
+                           <Filter size={32} className="opacity-20 mb-2" />
+                           <p>{searchQuery || stateFilter !== 'All States' ? 'No users found with these filters.' : 'No users online.'}</p>
+                           {(searchQuery || stateFilter !== 'All States') && (
+                             <button onClick={() => { setSearchQuery(''); setStateFilter('All States'); }} className="text-brand-500 text-sm font-bold hover:underline">Clear all filters</button>
+                           )}
+                        </div>
+                      )}
                     </div>
                   )}
                   
